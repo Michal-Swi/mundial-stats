@@ -1,3 +1,4 @@
+#include <stdexcept>
 #include <string>
 #include <chrono>
 #include <sstream>
@@ -163,9 +164,13 @@ class EloParser {
 	
 	private:
 	void fill_model_db(const std::string &cc, const std::vector<Elo> &historical_data) {
-		// the i = 0 has no known previous match date; we have to skip it
-
 		auto prev = historical_data.at(0);
+		prev.days_passed = 10;
+
+		if (!prev.friendly) {
+			model_elo_records[cc].push_back(prev);
+		}
+
 		for (int i = 1; i < historical_data.size(); i++) {
 			auto record = historical_data.at(i);
 			auto date_post = (std::chrono::year(record.year)/
@@ -209,6 +214,39 @@ class EloParser {
 		}
 
 		return model_elo_records;
+	}
+
+	private:
+	int get_opp_days_passed(const std::string &cc, const Elo &elo) {
+		if (model_elo_records[elo.opponent_code].empty()) {
+			return 10;
+		}
+
+		for (const auto &opp : model_elo_records[elo.opponent_code]) {
+			if (opp.year == elo.year and opp.month == elo.month 
+				and opp.day == elo.day and opp.opponent_code == cc) {
+				return opp.days_passed;
+			}
+		}
+
+		return 10; 
+	}
+
+	public:
+	void dump_data(const std::string &relative_path) {
+		std::ofstream file(relative_path);
+
+		for (const auto &[cc, elo_arr] : model_elo_records) {
+			for (const auto &elo : elo_arr) {
+				file << cc << ';'
+					 << elo.opponent_code << ';'
+					 << elo.elo - elo.opp_elo << ';'
+					 << elo.days_passed - get_opp_days_passed(cc, elo) << ';'
+					 << elo.home_advantage << std::endl;
+			}
+		}
+
+		file.close();
 	}
 };
 
