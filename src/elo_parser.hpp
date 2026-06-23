@@ -229,7 +229,7 @@ class EloParser {
 			}
 		}
 
-		return 10; 
+		throw std::runtime_error("Opponent is found, yet no record of match.");
 	}
 
 	public:
