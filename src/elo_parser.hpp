@@ -15,13 +15,14 @@
  * "Friendly" matches. */ 
 
 struct Elo {
-	int year;
-	int month; 
-	int day;
-	std::string opponent_code;
-	int elo;
+	int year, month, day;
+	int elo, opp_elo;
 	int days_passed; 
+	int goals;
+	bool home_advantage;
+
 	bool friendly;
+	std::string opponent_code;
 };
 
 // string is the country code 
@@ -106,6 +107,13 @@ class EloParser {
 			int us_goals = std::stoi(cols.at(5));
 			int enemy_goals = std::stoi(cols.at(6));
 
+			bool home_advantage; 
+			if (!cols.at(8).empty()) {
+				home_advantage = false;
+			} else {
+				home_advantage = true;
+			}
+
 			int us_elo = std::stoi(cols.at(10)) - std::stoi(cols.at(9));
 			int enemy_elo = std::stoi(cols.at(11)) + std::stoi(cols.at(9));
 			
@@ -113,6 +121,7 @@ class EloParser {
 				std::swap(us, enemy);
 				std::swap(us_goals, enemy_goals);
 				std::swap(us_elo, enemy_elo);
+				home_advantage = false;
 			}
 
 			Elo elo; 
@@ -124,10 +133,13 @@ class EloParser {
 			}
 
 			elo.elo = us_elo;
+			elo.goals = us_goals;
+			elo.opp_elo = enemy_elo;
 			elo.year = year;
 			elo.month = month;
 			elo.day = day;
 			elo.opponent_code = enemy;
+			elo.home_advantage = home_advantage;
 			historical_elo_records[us].push_back(elo);
 		}
 	}
