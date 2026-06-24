@@ -240,6 +240,7 @@ class EloParser {
 			for (const auto &elo : elo_arr) {
 				file << cc << ';'
 					 << elo.opponent_code << ';'
+					 << elo.goals << ';'
 					 << elo.elo - elo.opp_elo << ';'
 					 << elo.days_passed - get_opp_days_passed(cc, elo) << ';'
 					 << elo.home_advantage << std::endl;
