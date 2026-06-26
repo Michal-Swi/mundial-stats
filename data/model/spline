@@ -1,0 +1,41 @@
+                 Generalized Linear Model Regression Results                  
+==============================================================================
+Dep. Variable:                  goals   No. Observations:                 1488
+Model:                            GLM   Df Residuals:                     1481
+Model Family:                 Poisson   Df Model:                            6
+Link Function:                    Log   Scale:                          1.0000
+Method:                          IRLS   Log-Likelihood:                -2418.9
+Date:                Fri, 26 Jun 2026   Deviance:                       1749.9
+Time:                        15:30:29   Pearson chi2:                 1.54e+03
+No. Iterations:                     5   Pseudo R-squ. (CS):             0.3068
+Covariance Type:            nonrobust                                         
+=======================================================================================================================================
+                                                                          coef    std err          z      P>|z|      [0.025      0.975]
+---------------------------------------------------------------------------------------------------------------------------------------
+Intercept                                                              -1.4082      0.621     -2.268      0.023      -2.625      -0.191
+bs(elo_diff, df=5, lower_bound=elo.min(), upper_bound=elo.max())[0]     1.5666      0.850      1.842      0.065      -0.100       3.234
+bs(elo_diff, df=5, lower_bound=elo.min(), upper_bound=elo.max())[1]     1.3160      0.583      2.259      0.024       0.174       2.458
+bs(elo_diff, df=5, lower_bound=elo.min(), upper_bound=elo.max())[2]     2.3110      0.665      3.474      0.001       1.007       3.615
+bs(elo_diff, df=5, lower_bound=elo.min(), upper_bound=elo.max())[3]     3.0130      0.613      4.917      0.000       1.812       4.214
+bs(elo_diff, df=5, lower_bound=elo.min(), upper_bound=elo.max())[4]     2.9050      0.661      4.395      0.000       1.609       4.201
+is_home                                                                 0.2856      0.038      7.461      0.000       0.211       0.361
+=======================================================================================================================================
+Model guessed correctly  22  out of  64
+Mean absolute error:  0.9243173269694893
+Log loss:  1.5539549950976246
+Baseline (always guess 1): 23 / 64
+Baseline MAE (mean only): 0.983534946236559
+Baseline log loss (mean only): 1.5388256816661445
+Model validity test
+Wilcoxon p-value: 0.3883076471314233
+1.868279569892473
+count    128.000000
+mean       1.248548
+std        0.403457
+min        0.248086
+25%        1.009330
+50%        1.162040
+75%        1.417314
+max        2.980108
+dtype: float64
+True Match-Level Wilcoxon p-value: 0.0292

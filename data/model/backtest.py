@@ -7,7 +7,9 @@ from scipy.stats import poisson
 df = pd.read_csv('./data.csv', sep=';',
                  names=['team', 'opponent', 'goals', 'elo_diff', 'rest_diff', 'is_home'])
 
-formula = "goals ~ elo_diff + is_home"
+# formula = "goals ~ elo_diff + is_home"
+elo = df['elo_diff']
+formula = "goals ~ bs(elo_diff, df=4, lower_bound=elo.min(), upper_bound=elo.max()) + is_home"
 model = smf.glm(formula=formula, data=df, family=sm.families.Poisson()).fit()
 
 print(model.summary())
@@ -37,7 +39,7 @@ for row in backtest_dedup.itertuples(index=False):
     if most_probable == row.goals:
         correct += 1
 
-    print(model_lambda, ' ', most_probable, ' ', row.goals)
+    # print(model_lambda, ' ', most_probable, ' ', row.goals)
 
 print('Model guessed correctly ', correct, ' out of ', l)
 print('Mean absolute error: ', mae / l)
@@ -72,10 +74,11 @@ for row in backtest_dedup.itertuples(index=False):
 stat, p = wilcoxon(model_errors, baseline_errors)
 print('Wilcoxon p-value:', p)
 
-print(df['goals'].mean())  # what's mean_goals actually equal to?
+print(df['goals'].mean())  
 lambdas = [model.predict(pd.DataFrame({'elo_diff':[r.elo_diff],'is_home':[r.is_home]})).iloc[0] for r in backtest.itertuples(index=False)]
 print(pd.Series(lambdas).describe())
 
+"""
 print(len(backtest))
 print(len(backtest.drop_duplicates(subset=['team','opponent'])))
 
@@ -84,6 +87,7 @@ has_mirror = backtest.apply(
     axis=1
 )
 print('Rows with a mirror match:', has_mirror.sum(), 'out of', len(backtest))
+"""
 
 backtest['abs_elo_diff'] = backtest['elo_diff'].abs()
 merged = backtest.merge(
@@ -93,12 +97,14 @@ merged = backtest.merge(
     suffixes=('_A', '_B')
 )
 merged = merged[merged['team_A'] < merged['team_B']].reset_index(drop=True)
-print(len(merged))  # should be 64 now
-
 baseline_match_errors = []
 model_match_errors = []
+
+"""
+print(len(merged))  # should be 64 now
 print(merged.columns.tolist())
 print(len(merged))
+"""
 
 for row in merged.itertuples(index=False):
     lambda_A = model.predict(pd.DataFrame({
@@ -122,6 +128,7 @@ for row in merged.itertuples(index=False):
 
 stat, p = wilcoxon(model_match_errors, baseline_match_errors)
 print(f'True Match-Level Wilcoxon p-value: {p:.4f}')
+"""
 print('Len of merged: ', len(merged))
 print(merged[merged['team_A'] == merged['team_B']])
 
@@ -132,4 +139,5 @@ print(merged[['team_A','team_B']].drop_duplicates().shape[0])  # check for any r
 
 pd.set_option('display.max_rows', None)
 print(merged[['team_A','opponent_A','goals_A','team_B','opponent_B','goals_B']])
+"""
 
