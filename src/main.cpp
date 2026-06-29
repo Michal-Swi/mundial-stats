@@ -2,8 +2,8 @@
 
 int main() {
 	EloParser ep; 
-	ep.parse();
-	ep.dump_data("../data/training_data/data.csv");
+	ep.dump_dixon_coles_data(ep.parse_dixon_coles("../data/dixon-coles-2023"), 
+											      "../data/model/dixon-coles");
 
 	return 0;
 }

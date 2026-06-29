@@ -1,3 +1,4 @@
+#include <execution>
 #include <stdexcept>
 #include <string>
 #include <chrono>
@@ -19,11 +20,12 @@ struct Elo {
 	int year, month, day;
 	int elo, opp_elo;
 	int days_passed; 
-	int goals;
+	int goals, conceded;
 	bool home_advantage;
 
 	bool friendly;
 	std::string opponent_code;
+	std::string team_us, team_opp; 
 };
 
 // string is the country code 
@@ -41,7 +43,7 @@ class EloParser {
 
 	private:
 	std::vector<std::string> get_all_countries() {
-		std::ifstream countries_file("../data/tsv_names.csv");
+		std::ifstream countries_file("../data/backtest/all_countries_tsv");
 		std::vector<std::string> all_countries;
 
 		std::string country;
@@ -71,7 +73,7 @@ class EloParser {
 	public:
 	void parse_world_cup_countries() {
 		const std::string path = 
-			"../data/current_countries.csv";
+			"../data/backtest/normalized_countries";
 		std::ifstream world_cup_countries_file(path);
 		
 		std::string line; 
@@ -98,7 +100,7 @@ class EloParser {
 			int month = std::stoi(cols.at(1));
 			int day = std::stoi(cols.at(2));
 
-			if (year < 2023) {
+			if (!((year == 2022 and month == 11 and day >= 20) or (year == 2022 and month == 12 and day <= 18))) {
 				continue;
 			}
 
@@ -142,6 +144,13 @@ class EloParser {
 			elo.opponent_code = enemy;
 			elo.home_advantage = home_advantage;
 			historical_elo_records[us].push_back(elo);
+
+			if ((us == "HR" && enemy == "MA") || (us == "MA" && enemy == "HR")) {
+    std::cerr << "us=" << us << " enemy=" << enemy 
+              << " us_goals=" << us_goals << " enemy_goals=" << enemy_goals
+              << " elo=" << us_elo << " date=" << year << "-" << month << "-" << day 
+              << std::endl;
+}
 		}
 	}
 
@@ -203,7 +212,7 @@ class EloParser {
 		parse_codes(); // country code translation
 
 		// These are only the initial parses - 1. from the plan
-		const std::string path = "../data/elo/";
+		const std::string path = "../data/backtest/";
 		for (const auto &country : get_all_countries()) {
 			std::string curr_path = path + country;
 			parse_country(curr_path, delete_extension(country));
@@ -231,6 +240,115 @@ class EloParser {
 
 		throw std::runtime_error("Opponent is found, yet no record of match.");
 	}
+	
+
+	private:
+	// ymd in chrono is cursed and I won't use it more than necessary
+	struct Date {  
+		int year, month, day; 
+	};
+	
+	private:
+	Date parse_date(const std::string &s_date) {
+		Date date; 
+		std::string curr = "";
+			
+		int i = 0;
+		for (; s_date.at(i) != '-'; i++) {
+			curr += s_date.at(i);	
+		}
+
+		++i;
+		date.year = std::stoi(curr);
+		curr = "";
+
+		for (; s_date.at(i) != '-'; i++) {
+			curr += s_date.at(i);
+		}
+
+		++i;
+		date.month = std::stoi(curr);
+		curr = "";
+
+		for (; i < s_date.length(); i++) {
+			curr += s_date.at(i);
+		}
+
+		date.day = std::stoi(curr);
+		return date;
+	}
+
+	public:
+	std::vector<Elo> parse_dixon_coles(const std::string &relative_path) {
+		std::ifstream data(relative_path);
+		std::string line;
+		std::vector<Elo> parsed;
+
+		while (std::getline(data, line)) {
+			std::stringstream ss(line);
+			std::string token;
+			std::vector<std::string> cols;
+
+			while (std::getline(ss, token, '\t')) {
+				cols.push_back(token);
+			}
+
+			if (cols.at(5) == "Friendly") {
+				continue; 
+			}
+
+			auto date = parse_date(cols.at(0));
+
+			Elo elo_us, elo_opp;
+			elo_us.goals = std::stoi(cols.at(3));
+			elo_us.team_us = cols.at(1);
+			elo_us.team_opp = cols.at(2);
+
+			if (elo_us.team_us == cols.at(7)) {
+				elo_us.home_advantage = true;
+			} else {
+				elo_us.home_advantage = false; 
+			}
+
+			elo_opp.goals = std::stoi(cols.at(4));
+			elo_opp.team_us = cols.at(2);
+			elo_opp.team_opp = cols.at(1);
+
+			if (elo_opp.team_us == cols.at(7)) {
+				elo_opp.home_advantage = true;
+			} else {
+				elo_opp.home_advantage = false; 
+			}
+
+			elo_us.year = date.year;
+			elo_us.month = date.month;
+			elo_us.day = date.day;
+
+			elo_opp.year = date.year;
+			elo_opp.month = date.month;
+			elo_opp.day = date.day;
+			
+			parsed.push_back(elo_us);
+			parsed.push_back(elo_opp);
+
+			/*
+			std::cout << "Elo_us:" << std::endl;
+			std::cout << elo_us.goals << std::endl;
+			std::cout << elo_us.team_us << std::endl;
+			std::cout << elo_us.team_opp << std::endl;
+			std::cout << elo_us.home_advantage << std::endl;
+
+			std::cout << "Elo_opp:" << std::endl;
+			std::cout << elo_opp.goals << std::endl;
+			std::cout << elo_opp.team_us << std::endl;
+			std::cout << elo_opp.team_opp << std::endl;
+			std::cout << elo_opp.home_advantage << std::endl;
+			*/
+		}
+		
+		data.close();
+		return parsed; 
+	}
 
 	public:
 	void dump_data(const std::string &relative_path) {
@@ -245,6 +363,23 @@ class EloParser {
 					 << elo.days_passed - get_opp_days_passed(cc, elo) << ';'
 					 << elo.home_advantage << std::endl;
 			}
+		}
+
+		file.close();
+	}
+
+	public:
+	void dump_dixon_coles_data(const std::vector<Elo> &parsed, const std::string &relative_path) {
+		std::ofstream file(relative_path); 
+
+		for (const auto &elo : parsed) {
+			file << elo.year		   <<  ';'
+				 << elo.month		   <<  ';'
+				 << elo.day			   <<  ';'
+				 << elo.team_us		   <<  ';'
+				 << elo.team_opp	   <<  ';'
+				 << elo.goals		   <<  ';'
+				 << elo.home_advantage << std::endl;
 		}
 
 		file.close();
