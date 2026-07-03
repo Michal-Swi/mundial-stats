@@ -384,5 +384,16 @@ class EloParser {
 
 		file.close();
 	}
+
+	public:
+	void dump_translator(const std::string &relative_path) {
+		std::ofstream file(relative_path);
+
+		for (const auto &[code, name] : translator) {
+			file << code << ';' << name << std::endl;
+		}
+
+		file.close();
+	}
 };
 
